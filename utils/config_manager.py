@@ -41,7 +41,12 @@ class ConfigManager:
             raise OSError(f"Failed to load config: {e}") from e
 
     def get_path(self, key: str) -> Path:
-        return Path(self.config.get('Paths', key))
+        path = Path(self.config.get('Paths', key))
+        if path.is_absolute():
+            return path
+        if getattr(sys, 'frozen', False):
+            return Path(sys.executable).parent / path
+        return Path(__file__).resolve().parent.parent / path
 
     def _ensure_section(self, section: str) -> None:
         if section not in self.config:

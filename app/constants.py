@@ -1,0 +1,21 @@
+WINDOW_TITLE = "MediPerDiem 外来日当円収益集計"
+
+LABEL_REVENUE_FILE = "医師別収益データ:"
+BUTTON_BROWSE = "参照..."
+BUTTON_RUN = "集計を実行"
+DIALOG_TITLE_SELECT_FILE = "医師別収益データを選択"
+FILE_TYPE_EXCEL = "Excelファイル"
+
+TITLE_ERROR = "エラー"
+TITLE_DONE = "完了"
+MSG_NO_FILE_SELECTED = "医師別収益データのファイルを選択してください。"
+MSG_FILE_IN_USE = "ファイルに書き込めません。Excelなどで開いている場合は閉じてから再実行してください。\n{detail}"
+MSG_FILE_NOT_FOUND = "ファイルが見つかりません。\n{detail}"
+MSG_UNEXPECTED_ERROR = "処理中にエラーが発生しました。\n{detail}"
+MSG_DONE = "{month} の集計が完了しました。"
+
+LOG_BACKUP = "バックアップを作成しました: {path}"
+LOG_WORKBOOK_UPDATED = "{month} 列を更新しました({count}名): {path}"
+LOG_CSV_WRITTEN = "配信用CSVを出力しました: {path}"
+LOG_UNREGISTERED_DOCTOR = "【警告】変化表に行が無いためスキップしました: ID {doctor_id} {name}"
+LOG_MISSING_RECIPIENT = "【警告】宛先マスタのIDが変化表に無いためCSVに出力していません: ID {doctor_id}"
