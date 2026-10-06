@@ -60,7 +60,8 @@ class MainWindow:
 
         month = parse_target_month(revenue_path)
         revenues = read_doctor_revenues(revenue_path)
-        self._report(constants.LOG_BACKUP.format(path=backup_workbook(trend_path)))
+        backup_generations = self.config_manager.config.getint("Backup", "generations")
+        self._report(constants.LOG_BACKUP.format(path=backup_workbook(trend_path, backup_generations)))
         unregistered = update_trend_workbook(trend_path, month, revenues)
         self._report(constants.LOG_WORKBOOK_UPDATED.format(
             month=month, count=len(revenues) - len(unregistered), path=trend_path))

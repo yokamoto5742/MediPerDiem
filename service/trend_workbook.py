@@ -1,3 +1,4 @@
+import glob
 import shutil
 from copy import copy
 from datetime import datetime
@@ -12,12 +13,21 @@ from service.revenue_reader import DoctorRevenue
 PER_DIEM_SHEET_NAME = "外来日当円"
 REVENUE_SHEET_NAME = "外来収益合計"
 FIRST_MONTH_COLUMN = 4
+BACKUP_DIR_NAME = "backup"
 
 
-def backup_workbook(trend_path: Path) -> Path:
+def backup_workbook(trend_path: Path, generations: int) -> Path:
+    """backupフォルダへ更新前の変化表を複製し、最新generations世代だけ残す"""
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    backup_path = trend_path.with_name(f"{trend_path.stem}_backup_{timestamp}{trend_path.suffix}")
+    backup_dir = trend_path.parent / BACKUP_DIR_NAME
+    backup_dir.mkdir(exist_ok=True)
+    backup_path = backup_dir / f"{trend_path.stem}_{timestamp}{trend_path.suffix}"
     shutil.copy2(trend_path, backup_path)
+
+    # ファイル名のタイムスタンプ順 = 時系列順
+    backups = sorted(backup_dir.glob(f"{glob.escape(trend_path.stem)}_*{trend_path.suffix}"))
+    for old_backup in backups[:max(len(backups) - generations, 0)]:
+        old_backup.unlink()
     return backup_path
 
 
