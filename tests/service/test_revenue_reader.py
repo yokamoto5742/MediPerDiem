@@ -42,7 +42,7 @@ def test_parse_target_month_rejects_invalid_name(name: str) -> None:
 def test_per_diem_is_total_divided_by_patients(tmp_path: Path) -> None:
     path = make_revenue_workbook(tmp_path / "r.xlsx", [revenue_row("眼", 107, 500, 300, 1000, 3)])
     (doctor,) = read_doctor_revenues(path)
-    assert (doctor.doctor_id, doctor.revenue) == (107, 1000)
+    assert (doctor.doctor_id, doctor.revenue, doctor.department) == (107, 1000, "眼")
     assert doctor.per_diem == pytest.approx(1000 / 3)
 
 

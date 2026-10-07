@@ -25,8 +25,8 @@ def read_recipients(recipients_path: Path) -> dict[int, str]:
     return {int(row[RECIPIENT_ID_HEADER]): row[RECIPIENT_EMAIL_HEADER] for row in reader}
 
 
-def write_distribution_csv(trend_path: Path, recipients_path: Path, output_path: Path) -> list[int]:
-    """配信用CSVを出力し、変化表に行が無い宛先IDを返す"""
+def read_distribution_rows(trend_path: Path, recipients_path: Path) -> tuple[list, list[tuple], list[int]]:
+    """対象月の見出し、宛先マスタ順の(ID, 医師名, メールアドレス, 各月の外来日当円)、変化表に行が無い宛先IDを返す"""
     recipients = read_recipients(recipients_path)
     workbook = openpyxl.load_workbook(trend_path, read_only=True, data_only=True)
     try:
@@ -39,19 +39,32 @@ def write_distribution_csv(trend_path: Path, recipients_path: Path, output_path:
     row_by_id = {row[0]: row for row in sheet_rows[1:]}
 
     missing_ids = [doctor_id for doctor_id in recipients if doctor_id not in row_by_id]
+    doctor_rows = [
+        (doctor_id, row_by_id[doctor_id][1], email, list(row_by_id[doctor_id][FIRST_MONTH_COLUMN - 1:last_column]))
+        for doctor_id, email in recipients.items() if doctor_id in row_by_id
+    ]
+    return months, doctor_rows, missing_ids
+
+
+def write_distribution_csv(trend_path: Path, recipients_path: Path, output_path: Path) -> list[int]:
+    """配信用CSVを出力し、変化表に行が無い宛先IDを返す"""
+    months, doctor_rows, missing_ids = read_distribution_rows(trend_path, recipients_path)
     with open(output_path, "w", encoding="utf-8-sig", newline="") as csv_file:
         writer = csv.writer(csv_file)
         writer.writerow(CSV_FIXED_HEADERS + months)
-        for doctor_id, email in recipients.items():
-            if doctor_id in row_by_id:
-                row = row_by_id[doctor_id]
-                per_diems = [format_per_diem(value) for value in row[FIRST_MONTH_COLUMN - 1:last_column]]
-                writer.writerow([doctor_id, row[1], email] + per_diems)
+        for doctor_id, name, email, per_diems in doctor_rows:
+            writer.writerow([doctor_id, name, email] + [format_per_diem(value) for value in per_diems])
     return missing_ids
+
+
+def round_per_diem(value: object) -> int | None:
+    """四捨五入した整数を返す(空欄はNone)"""
+    if not isinstance(value, (int, float)):
+        return None
+    return int(Decimal(str(value)).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
 
 
 def format_per_diem(value: object) -> str:
     """四捨五入した整数を桁区切りで返す(空欄は空文字)"""
-    if not isinstance(value, (int, float)):
-        return ""
-    return f"{int(Decimal(str(value)).quantize(Decimal('1'), rounding=ROUND_HALF_UP)):,}"
+    rounded = round_per_diem(value)
+    return "" if rounded is None else f"{rounded:,}"

@@ -25,6 +25,7 @@ class DoctorRevenue:
     name: str
     revenue: float
     per_diem: float | None
+    department: str = ""
 
 
 def parse_target_month(revenue_path: Path) -> int:
@@ -74,6 +75,7 @@ def _to_doctor_revenue(same_name_rows: list[tuple]) -> DoctorRevenue:
         name=str(youngest[COL_NAME] or ""),
         revenue=revenue,
         per_diem=revenue / patients if patients else None,
+        department=str(youngest[COL_DEPARTMENT] or ""),
     )
 
 

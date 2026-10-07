@@ -4,6 +4,7 @@ from pathlib import Path
 from tkinter import filedialog, messagebox, scrolledtext, ttk
 
 from app import constants
+from service.average_workbook import write_average_workbook
 from service.distribution_csv import write_distribution_csv
 from service.revenue_reader import parse_target_month, read_doctor_revenues
 from service.trend_workbook import backup_workbook, update_trend_workbook
@@ -57,21 +58,25 @@ class MainWindow:
     def _aggregate(self, revenue_path: Path) -> int:
         trend_path = self.config_manager.get_path("trend_workbook")
         csv_path = self.config_manager.get_path("distribution_csv")
+        average_path = self.config_manager.get_path("average_workbook")
 
         month = parse_target_month(revenue_path)
         revenues = read_doctor_revenues(revenue_path)
         backup_generations = self.config_manager.config.getint("Backup", "generations")
         self._report(constants.LOG_BACKUP.format(path=backup_workbook(trend_path, backup_generations)))
-        unregistered = update_trend_workbook(trend_path, month, revenues)
-        self._report(constants.LOG_WORKBOOK_UPDATED.format(
-            month=month, count=len(revenues) - len(unregistered), path=trend_path))
-        for doctor in unregistered:
-            self._report(constants.LOG_UNREGISTERED_DOCTOR.format(doctor_id=doctor.doctor_id, name=doctor.name))
+        inserted = update_trend_workbook(trend_path, month, revenues)
+        self._report(constants.LOG_WORKBOOK_UPDATED.format(month=month, count=len(revenues), path=trend_path))
+        for doctor in inserted:
+            self._report(constants.LOG_DOCTOR_INSERTED.format(
+                department=doctor.department, doctor_id=doctor.doctor_id, name=doctor.name))
 
-        missing_ids = write_distribution_csv(trend_path, self.config_manager.get_path("recipients_csv"), csv_path)
+        recipients_path = self.config_manager.get_path("recipients_csv")
+        missing_ids = write_distribution_csv(trend_path, recipients_path, csv_path)
         self._report(constants.LOG_CSV_WRITTEN.format(path=csv_path))
         for doctor_id in missing_ids:
             self._report(constants.LOG_MISSING_RECIPIENT.format(doctor_id=doctor_id))
+        write_average_workbook(trend_path, recipients_path, average_path)
+        self._report(constants.LOG_AVERAGE_WRITTEN.format(path=average_path))
         return month
 
     def _report(self, message: str) -> None:

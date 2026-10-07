@@ -50,12 +50,37 @@ def test_rerun_overwrites_same_month_column(tmp_path: Path) -> None:
     assert sheet.cell(1, 7).value is None
 
 
-def test_returns_doctors_missing_from_workbook(tmp_path: Path) -> None:
+def test_inserts_missing_doctor_below_same_department(tmp_path: Path) -> None:
     path = make_trend_workbook(tmp_path / "trend.xlsx")
-    unknown = DoctorRevenue(901, "健診 次郎", 116821, 5310.05)
+    new_doctor = DoctorRevenue(440, "内科 次郎", 116821, 5310.05, "内")
 
-    assert update_trend_workbook(path, 202608, [unknown]) == [unknown]
-    assert openpyxl.load_workbook(path)["外来日当円"].max_row == 3
+    assert update_trend_workbook(path, 202608, [new_doctor, DoctorRevenue(107, "", 200, 20, "眼")]) == [new_doctor]
+
+    workbook = openpyxl.load_workbook(path)
+    per_diem, revenue = workbook["外来日当円"], workbook["外来収益合計"]
+    assert [cell.value for cell in per_diem[3]] == [440, "内科 次郎", "内", None, None, 5310.05]
+    assert [cell.value for cell in revenue[3]] == [440, "内科 次郎", "内", None, None, 116821]
+    assert per_diem.cell(3, 5).number_format == NUMBER_FORMAT
+    assert [per_diem.cell(4, column).value for column in (1, 5, 6)] == [107, None, 20]
+
+
+def test_inserts_doctor_of_new_department_at_bottom(tmp_path: Path) -> None:
+    path = make_trend_workbook(tmp_path / "trend.xlsx")
+    new_doctor = DoctorRevenue(899, "泌尿 四郎", 300, 30, "泌")
+
+    assert update_trend_workbook(path, 202608, [new_doctor]) == [new_doctor]
+
+    sheet = openpyxl.load_workbook(path)["外来日当円"]
+    assert [cell.value for cell in sheet[4]] == [899, "泌尿 四郎", "泌", None, None, 30]
+
+
+def test_rerun_does_not_insert_doctor_twice(tmp_path: Path) -> None:
+    path = make_trend_workbook(tmp_path / "trend.xlsx")
+    new_doctor = DoctorRevenue(440, "内科 次郎", 100, 10, "内")
+    update_trend_workbook(path, 202608, [new_doctor])
+
+    assert update_trend_workbook(path, 202608, [new_doctor]) == []
+    assert openpyxl.load_workbook(path)["外来日当円"].max_row == 4
 
 
 def test_backup_keeps_original_content(tmp_path: Path) -> None:
