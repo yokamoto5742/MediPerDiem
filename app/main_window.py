@@ -6,6 +6,7 @@ from tkinter import filedialog, messagebox, scrolledtext, ttk
 from app import constants
 from service.average_workbook import write_average_workbook
 from service.distribution_csv import write_distribution_csv
+from service.mail_merge_csv import write_mail_merge_csv
 from service.revenue_reader import parse_target_month, read_doctor_revenues
 from service.trend_workbook import backup_workbook, update_trend_workbook
 from utils.config_manager import ConfigManager
@@ -59,6 +60,7 @@ class MainWindow:
         trend_path = self.config_manager.get_path("trend_workbook")
         csv_path = self.config_manager.get_path("distribution_csv")
         average_path = self.config_manager.get_path("average_workbook")
+        mail_merge_path = self.config_manager.get_path("mail_merge_csv")
 
         month = parse_target_month(revenue_path)
         revenues = read_doctor_revenues(revenue_path)
@@ -77,6 +79,8 @@ class MainWindow:
             self._report(constants.LOG_MISSING_RECIPIENT.format(doctor_id=doctor_id))
         write_average_workbook(trend_path, recipients_path, average_path)
         self._report(constants.LOG_AVERAGE_WRITTEN.format(path=average_path))
+        write_mail_merge_csv(trend_path, recipients_path, mail_merge_path)
+        self._report(constants.LOG_MAIL_MERGE_WRITTEN.format(path=mail_merge_path))
         return month
 
     def _report(self, message: str) -> None:
