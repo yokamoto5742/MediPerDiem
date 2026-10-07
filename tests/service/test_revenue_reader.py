@@ -24,9 +24,9 @@ def make_revenue_workbook(path: Path, rows: list[list[object]], headers: list[st
 
 
 def revenue_row(department: str | None, doctor_id: int | None, medicine: int, injection: int,
-                total: int, patients: int | None) -> list[object]:
+                total: int, patients: int | None, name: str = "医師") -> list[object]:
     exam = total - medicine - injection
-    return [department, doctor_id, "医師", exam, medicine, injection, 0, 0, 0, 0, 0, 0, 0, total, patients]
+    return [department, doctor_id, name, exam, medicine, injection, 0, 0, 0, 0, 0, 0, 0, total, patients]
 
 
 def test_parse_target_month() -> None:
@@ -66,6 +66,41 @@ def test_rows_without_id_are_skipped(tmp_path: Path) -> None:
     rows = [revenue_row("麻", 144, 0, 0, 100, 1), revenue_row(None, None, 0, 0, 64000, 12)]
     path = make_revenue_workbook(tmp_path / "r.xlsx", rows)
     assert [doctor.doctor_id for doctor in read_doctor_revenues(path)] == [144]
+
+
+def test_same_name_is_merged_into_youngest_id(tmp_path: Path) -> None:
+    rows = [
+        revenue_row("耳", 612, 0, 0, 200, 1, name="佐藤　諒"),
+        revenue_row("耳", 436, 0, 0, 1000, 3, name="佐藤　諒"),
+        revenue_row("眼", 107, 0, 0, 500, 5, name="鈴木　一郎"),
+    ]
+    path = make_revenue_workbook(tmp_path / "r.xlsx", rows)
+    merged, other = read_doctor_revenues(path)
+    assert (merged.doctor_id, merged.revenue, merged.per_diem) == (436, 1200, 300)
+    assert (other.doctor_id, other.revenue, other.per_diem) == (107, 500, 100)
+
+
+def test_same_name_ignores_whitespace_and_adjusts_each_row(tmp_path: Path) -> None:
+    rows = [
+        revenue_row("内", 400, 500, 300, 1000, 4, name="田中 宏明"),
+        revenue_row("外", 950, 500, 300, 1000, 1, name="田　中　宏　明"),
+    ]
+    path = make_revenue_workbook(tmp_path / "r.xlsx", rows)
+    (doctor,) = read_doctor_revenues(path)
+    # 内科の行だけ調整される: 280 + 1000
+    assert (doctor.doctor_id, doctor.name, doctor.revenue) == (400, "田中 宏明", 1280)
+    assert doctor.per_diem == 256
+
+
+def test_health_checkup_rows_are_excluded(tmp_path: Path) -> None:
+    rows = [
+        revenue_row("内", 400, 0, 0, 1000, 4, name="田中 宏明"),
+        revenue_row("健", 923, 0, 0, 470, 1, name="田　中　宏　明"),
+        revenue_row("健", 901, 0, 0, 5000, 2, name="本多　正治"),
+    ]
+    path = make_revenue_workbook(tmp_path / "r.xlsx", rows)
+    (doctor,) = read_doctor_revenues(path)
+    assert (doctor.doctor_id, doctor.revenue, doctor.per_diem) == (400, 1000, 250)
 
 
 def test_unexpected_layout_raises(tmp_path: Path) -> None:
