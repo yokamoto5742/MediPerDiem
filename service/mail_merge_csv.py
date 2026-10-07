@@ -9,7 +9,6 @@ FULLWIDTH_DIGITS = "０１２３４５６７８９"
 MAIL_MERGE_FIXED_HEADERS = ["医師名", "メールアドレス", "見出し"]
 HEADING_LABEL = "月  "
 VALUE_WIDTH = 12
-MISSING_VALUE = "-"
 
 
 def fiscal_year(year_month: int) -> int:
@@ -42,14 +41,14 @@ def write_mail_merge_csv(trend_path: Path, recipients_path: Path, output_path: P
         for _, name, email, per_diems in doctor_rows:
             text_by_month = {int(month): format_per_diem(value) for month, value in zip(months, per_diems)}
             writer.writerow([name, email, heading] + [
-                month_label(month) + "".join(
-                    align_right(per_diem_text(text_by_month, year, month), VALUE_WIDTH) for year in years)
+                (month_label(month) + "".join(
+                    align_right(per_diem_text(text_by_month, year, month), VALUE_WIDTH) for year in years)).rstrip()
                 for month in FISCAL_MONTHS
             ])
 
 
 def per_diem_text(text_by_month: dict[int, str], year: int, month: int) -> str:
-    """年度と月に対応する外来日当円を「円」付きで返す(値が無ければ「-」)"""
+    """年度と月に対応する外来日当円を「円」付きで返す(値が無ければ空文字)"""
     calendar_year = year if month >= 4 else year + 1
     text = text_by_month.get(calendar_year * 100 + month, "")
-    return f"{text}円" if text else MISSING_VALUE
+    return f"{text}円" if text else ""
