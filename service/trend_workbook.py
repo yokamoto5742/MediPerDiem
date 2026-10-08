@@ -32,8 +32,10 @@ def backup_workbook(trend_path: Path, generations: int) -> Path:
     return backup_path
 
 
-def update_trend_workbook(trend_path: Path, month: int, revenues: list[DoctorRevenue]) -> list[DoctorRevenue]:
-    """対象月の列を両シートに書き込み、変化表に行が無く新たに挿入した医師を返す"""
+def update_trend_workbook(
+    trend_path: Path, month: int, revenues: list[DoctorRevenue]
+) -> list[tuple[int, DoctorRevenue]]:
+    """対象月の列を両シートに書き込み、変化表に行が無く新たに挿入した(外来日当円シートの行番号, 医師)を返す"""
     workbook = openpyxl.load_workbook(trend_path)
     per_diem_sheet = workbook[PER_DIEM_SHEET_NAME]
     revenue_sheet = workbook[REVENUE_SHEET_NAME]
@@ -44,7 +46,9 @@ def update_trend_workbook(trend_path: Path, month: int, revenues: list[DoctorRev
         _insert_doctor_row(per_diem_sheet, month, doctor, doctor.per_diem)
         _insert_doctor_row(revenue_sheet, month, doctor, doctor.revenue)
     workbook.save(trend_path)
-    return unregistered
+    # 後続の挿入で行がずれるため、行番号はすべて挿入し終えてから求める
+    row_by_id = {per_diem_sheet.cell(row, 1).value: row for row in range(2, per_diem_sheet.max_row + 1)}
+    return [(row_by_id[doctor.doctor_id], doctor) for doctor in unregistered]
 
 
 def _insert_doctor_row(sheet: Worksheet, month: int, doctor: DoctorRevenue, value: float | None) -> None:

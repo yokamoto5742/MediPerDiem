@@ -54,7 +54,9 @@ def test_inserts_missing_doctor_below_same_department(tmp_path: Path) -> None:
     path = make_trend_workbook(tmp_path / "trend.xlsx")
     new_doctor = DoctorRevenue(440, "内科 次郎", 116821, 5310.05, "内")
 
-    assert update_trend_workbook(path, 202608, [new_doctor, DoctorRevenue(107, "", 200, 20, "眼")]) == [new_doctor]
+    assert update_trend_workbook(path, 202608, [new_doctor, DoctorRevenue(107, "", 200, 20, "眼")]) == [
+        (3, new_doctor)
+    ]
 
     workbook = openpyxl.load_workbook(path)
     per_diem, revenue = workbook["外来日当円"], workbook["外来収益合計"]
@@ -68,10 +70,21 @@ def test_inserts_doctor_of_new_department_at_bottom(tmp_path: Path) -> None:
     path = make_trend_workbook(tmp_path / "trend.xlsx")
     new_doctor = DoctorRevenue(899, "泌尿 四郎", 300, 30, "泌")
 
-    assert update_trend_workbook(path, 202608, [new_doctor]) == [new_doctor]
+    assert update_trend_workbook(path, 202608, [new_doctor]) == [(4, new_doctor)]
 
     sheet = openpyxl.load_workbook(path)["外来日当円"]
     assert [cell.value for cell in sheet[4]] == [899, "泌尿 四郎", "泌", None, None, 30]
+
+
+def test_returns_row_numbers_after_all_insertions(tmp_path: Path) -> None:
+    path = make_trend_workbook(tmp_path / "trend.xlsx")
+    eye_doctor = DoctorRevenue(500, "眼科 三郎", 300, 30, "眼")
+    internal_doctor = DoctorRevenue(440, "内科 次郎", 100, 10, "内")
+
+    # 後から挿入した内科の行により、先に挿入した眼科の行は1行下へずれる
+    assert update_trend_workbook(path, 202608, [eye_doctor, internal_doctor]) == [
+        (5, eye_doctor), (3, internal_doctor)
+    ]
 
 
 def test_rerun_does_not_insert_doctor_twice(tmp_path: Path) -> None:

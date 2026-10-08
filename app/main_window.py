@@ -46,7 +46,7 @@ class MainWindow:
             messagebox.showerror(constants.TITLE_ERROR, constants.MSG_NO_FILE_SELECTED)
             return
         try:
-            month = self._aggregate(Path(self.revenue_path.get()))
+            month, inserted_rows = self._aggregate(Path(self.revenue_path.get()))
         except PermissionError as e:
             self._show_error(constants.MSG_FILE_IN_USE, e)
         except FileNotFoundError as e:
@@ -54,9 +54,13 @@ class MainWindow:
         except Exception as e:
             self._show_error(constants.MSG_UNEXPECTED_ERROR, e)
         else:
-            messagebox.showinfo(constants.TITLE_DONE, constants.MSG_DONE.format(month=month))
+            message = constants.MSG_DONE.format(month=month)
+            if inserted_rows:
+                message += constants.MSG_INSERTED_ROWS.format(count=len(inserted_rows), rows="\n".join(inserted_rows))
+            messagebox.showinfo(constants.TITLE_DONE, message)
 
-    def _aggregate(self, revenue_path: Path) -> int:
+    def _aggregate(self, revenue_path: Path) -> tuple[int, list[str]]:
+        """集計を実行し、対象月と変化表に追加した行の通知文を返す"""
         trend_path = self.config_manager.get_path("trend_workbook")
         csv_path = self.config_manager.get_path("distribution_csv")
         average_path = self.config_manager.get_path("average_workbook")
@@ -68,9 +72,12 @@ class MainWindow:
         self._report(constants.LOG_BACKUP.format(path=backup_workbook(trend_path, backup_generations)))
         inserted = update_trend_workbook(trend_path, month, revenues)
         self._report(constants.LOG_WORKBOOK_UPDATED.format(month=month, count=len(revenues), path=trend_path))
-        for doctor in inserted:
+        inserted_rows: list[str] = []
+        for row, doctor in inserted:
             self._report(constants.LOG_DOCTOR_INSERTED.format(
-                department=doctor.department, doctor_id=doctor.doctor_id, name=doctor.name))
+                row=row, department=doctor.department, doctor_id=doctor.doctor_id, name=doctor.name))
+            inserted_rows.append(constants.MSG_INSERTED_ROW.format(
+                row=row, department=doctor.department, doctor_id=doctor.doctor_id, name=doctor.name))
 
         recipients_path = self.config_manager.get_path("recipients_csv")
         missing_ids = write_distribution_csv(trend_path, recipients_path, csv_path)
@@ -81,7 +88,7 @@ class MainWindow:
         self._report(constants.LOG_AVERAGE_WRITTEN.format(path=average_path))
         write_mail_merge_csv(trend_path, recipients_path, mail_merge_path)
         self._report(constants.LOG_MAIL_MERGE_WRITTEN.format(path=mail_merge_path))
-        return month
+        return month, inserted_rows
 
     def _report(self, message: str) -> None:
         logger.info(message)
