@@ -4,7 +4,7 @@ from pathlib import Path
 import openpyxl
 import pytest
 
-from service.mail_merge_csv import fiscal_year, write_mail_merge_csv
+from service.mail_merge_csv import fiscal_year, write_kpi_mail_merge_csv, write_mail_merge_csv
 
 
 def make_trend_workbook(path: Path, last_month: int) -> Path:
@@ -55,4 +55,47 @@ def test_switches_years_when_new_fiscal_year_starts(tmp_path: Path) -> None:
 
     assert row["見出し"] == "月      2026年度    2027年度"
     assert row["4月"] == "４月   123,456円"
+    assert row["3月"] == "３月"
+
+
+def read_kpi_row(tmp_path: Path, trend_path: Path) -> dict[str, str]:
+    recipients_path = tmp_path / "recipients.csv"
+    recipients_path.write_text("ID,メールアドレス\n103,太郎 <t@example.com>\n107,花子 <h@example.com>\n999,不明 <x@example.com>\n", encoding="utf-8-sig")
+    output_path = tmp_path / "kpi.csv"
+    write_kpi_mail_merge_csv(trend_path, recipients_path, output_path)
+    with open(output_path, encoding="utf-8-sig", newline="") as csv_file:
+        rows = list(csv.DictReader(csv_file))
+    assert len(rows) == 1
+    return rows[0]
+
+
+def test_kpi_writes_average_of_rounded_values_excluding_blanks(tmp_path: Path) -> None:
+    workbook = openpyxl.Workbook()
+    sheet = workbook.active
+    assert sheet is not None
+    sheet.title = "外来日当円"
+    sheet.append(["ID", "医師名", "診療科", 202504, 202604, 202605])
+    sheet.append([103, "内科 太郎", "内", 10000.4, 20000, 1.5])
+    sheet.append([107, "眼科 花子", "眼", None, 10001, 2.5])
+    sheet.append([500, "宛先外 次郎", "外", 99999, 99999, 99999])
+    workbook.save(tmp_path / "trend.xlsx")
+
+    row = read_kpi_row(tmp_path, tmp_path / "trend.xlsx")
+
+    assert list(row)[:3] == ["年月", "平均", "見出し"]
+    assert list(row)[3:] == ["4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月", "1月", "2月", "3月"]
+    assert row["年月"] == "2026年5月"
+    # 1.5 と 2.5 を先に四捨五入(2 と 3)してから平均する
+    assert row["平均"] == "3円"
+    assert row["見出し"] == "月      2025年度    2026年度"
+    assert row["4月"] == "４月    10,000円    15,001円"
+    assert row["5月"] == "５月                     3円"
+    assert row["6月"] == "６月"
+
+
+def test_kpi_switches_years_when_new_fiscal_year_starts(tmp_path: Path) -> None:
+    row = read_kpi_row(tmp_path, make_trend_workbook(tmp_path / "trend.xlsx", 202704))
+
+    assert row["見出し"] == "月      2026年度    2027年度"
+    assert row["4月"] == "４月    64,228円"
     assert row["3月"] == "３月"
