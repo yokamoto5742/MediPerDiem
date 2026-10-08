@@ -98,10 +98,11 @@ def test_rerun_does_not_insert_doctor_twice(tmp_path: Path) -> None:
 
 def test_backup_keeps_original_content(tmp_path: Path) -> None:
     path = make_trend_workbook(tmp_path / "trend.xlsx")
-    backup_path = backup_workbook(path, 12)
+    backup_dir = tmp_path / "other" / "backup"
+    backup_path = backup_workbook(path, backup_dir, 12)
     update_trend_workbook(path, 202608, [DoctorRevenue(103, "", 100, 10)])
 
-    assert backup_path.parent == path.parent / "backup"
+    assert backup_path.parent == backup_dir
     assert openpyxl.load_workbook(backup_path)["外来日当円"].cell(1, 6).value is None
 
 
@@ -114,7 +115,7 @@ def test_backup_keeps_only_latest_generations(tmp_path: Path) -> None:
     unrelated = backup_dir / "other_20250401_000000.xlsx"
     unrelated.touch()
 
-    backup_path = backup_workbook(path, 2)
+    backup_path = backup_workbook(path, backup_dir, 2)
 
     assert sorted(backup_dir.glob("trend_*")) == [backup_dir / "trend_20250403_000000.xlsx", backup_path]
     assert unrelated.exists()

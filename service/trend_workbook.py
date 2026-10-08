@@ -14,14 +14,12 @@ PER_DIEM_SHEET_NAME = "外来日当円"
 REVENUE_SHEET_NAME = "外来収益合計"
 DEPARTMENT_COLUMN = 3
 FIRST_MONTH_COLUMN = 4
-BACKUP_DIR_NAME = "backup"
 
 
-def backup_workbook(trend_path: Path, generations: int) -> Path:
-    """backupフォルダへ更新前の変化表を複製し、最新generations世代だけ残す"""
+def backup_workbook(trend_path: Path, backup_dir: Path, generations: int) -> Path:
+    """backup_dirへ更新前の変化表を複製し、最新generations世代だけ残す"""
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    backup_dir = trend_path.parent / BACKUP_DIR_NAME
-    backup_dir.mkdir(exist_ok=True)
+    backup_dir.mkdir(parents=True, exist_ok=True)
     backup_path = backup_dir / f"{trend_path.stem}_{timestamp}{trend_path.suffix}"
     shutil.copy2(trend_path, backup_path)
 
