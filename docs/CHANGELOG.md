@@ -10,7 +10,7 @@
 ## [0.7.0] - 2026-10-08
 
 ### 追加
-- 全医師の外来日当円の平均を二村副院長へ Thunderbird の Mail Merge で送るための「医局KPIメール差し込み用.csv」を出力(1行だけのCSVで、最新月の年月と平均、前年度と今年度の平均を月ごとに横並びにした行を持つ。平均は「常勤医師外来日当円平均の推移.xlsx」の平均行と同じ値。出力先は `config.ini` の `[Paths] kpi_mail_merge_csv`。手順は `docs/Thunderbird.md`)
+- 全医師の外来日当円の平均を二村副院長へ Thunderbird の Mail Merge で送るための「医局KPIメール差し込み用.csv」を出力 (1行だけのCSVで、最新月の年月と平均、前年度と今年度の平均を月ごとに横並びにした行を持つ。平均は「常勤医師外来日当円平均の推移.xlsx」の平均行と同じ値。出力先は `config.ini` の `[Paths] kpi_mail_merge_csv`。手順は `Thunderbirdの設定.md`)
 
 ## [0.6.0] - 2026-10-08
 
@@ -30,7 +30,7 @@
 ## [0.4.0] - 2026-10-07
 
 ### 追加
-- Thunderbird の Mail Merge でプレーンテキストのメールを一括送信するための「各医師メール差し込み用.csv」を出力(前年度と今年度の外来日当円を月ごとに横並びにした行を持ち、値が無い月は `-`、出力先は `config.ini` の `[Paths] mail_merge_csv`。手順は `docs/Thunderbird.md`)
+- Thunderbird の Mail Merge でプレーンテキストのメールを一括送信するための「各医師メール差し込み用.csv」を出力 (前年度と今年度の外来日当円を月ごとに横並びにした行を持ち、値が無い月は `-`、出力先は `config.ini` の `[Paths] mail_merge_csv`。手順は `Thunderbirdの設定.md`)
 
 ## [0.3.0] - 2026-10-07
 
