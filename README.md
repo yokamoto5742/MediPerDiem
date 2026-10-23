@@ -20,7 +20,7 @@
 ## 🚀 セットアップ
 
 ```bash
-git clone <リポジトリURL>
+git clone https://github.com/yokamoto5742/MediPerDiem
 cd MediPerDiem
 uv sync
 ```
@@ -86,12 +86,10 @@ uv run python build.py               # exe 作成(PyInstaller が必要)
 - **CSV が文字化けする**: 日本語 Windows 由来のファイルは CP932 の場合があります。読み込みは UTF-8 を試してから CP932 にフォールバックします。
 - **処理の詳細を確認したい**: `logs/` のログを確認してください。
 
-## 📚 関連ドキュメント
+## ライセンス
 
-- [Thunderbird による各医師へのメール一括送信](docs/Thunderbirdの設定.md)
-- [データ処理再実行時の注意点](docs/データ処理再実行時の注意点.md)
-- [変更履歴](docs/CHANGELOG.md)
+このプロジェクトのライセンス情報については、 [LICENSE](docs/LICENSE) を参照してください。
 
-## 📄 ライセンス
+## 更新履歴
 
-[docs/LICENSE](docs/LICENSE) を参照してください。
+更新履歴は [CHANGELOG.md](docs/CHANGELOG.md) を参照してください。
